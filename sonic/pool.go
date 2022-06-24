@@ -1,14 +1,17 @@
 package sonic
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 type driversPool struct {
 	driverFactory *driverFactory
 	drivers       chan *driverWrapper
 	pingThreshold time.Duration
 
-	// closedCh is closed when driversPool closed.
-	closedCh chan struct{}
+	isPoolClosedMu sync.RWMutex
+	isPoolClosed   bool
 }
 
 func newDriversPool(
@@ -23,7 +26,8 @@ func newDriversPool(
 
 		pingThreshold: pingThreshold,
 
-		closedCh: make(chan struct{}),
+		isPoolClosedMu: sync.RWMutex{},
+		isPoolClosed:   false,
 	}
 
 	var err error
@@ -55,12 +59,13 @@ func (p *driversPool) put(dw *driverWrapper) {
 		return
 	}
 
-	select {
-	case <-p.closedCh:
+	p.isPoolClosedMu.RLock()
+	defer p.isPoolClosedMu.RUnlock()
+
+	if p.isPoolClosed {
 		dw.close()
 
 		return
-	default:
 	}
 
 	select {
@@ -72,14 +77,16 @@ func (p *driversPool) put(dw *driverWrapper) {
 	}
 }
 
-// Get healthy driver from the pool. It pings the connection if it was configured.
-// It will open connection if no connection is available in the pool.
-// Closig of connection will return it back.
+// Get a healthy driver from the pool. It pings the connection
+// if it was configured by OptionPoolPingThreshold.
+// It will open a connection if no connection is available in the pool.
+// Closing of connection will return it back.
 func (p *driversPool) Get() (*driverWrapper, error) {
-	select {
-	case <-p.closedCh:
+	p.isPoolClosedMu.RLock()
+	defer p.isPoolClosedMu.RUnlock()
+
+	if p.isPoolClosed {
 		return nil, ErrClosed
-	default:
 	}
 
 	select {
@@ -104,7 +111,10 @@ func (p *driversPool) Get() (*driverWrapper, error) {
 
 // Close and quit all connections in the pool.
 func (p *driversPool) Close() {
-	close(p.closedCh)
+	p.isPoolClosedMu.Lock()
+	defer p.isPoolClosedMu.Unlock()
+	p.isPoolClosed = true
+
 	close(p.drivers)
 	for dw := range p.drivers {
 		if !dw.closed {
@@ -123,13 +133,13 @@ func (p *driversPool) wrapDriver(d *driver) *driverWrapper {
 	}
 }
 
-// driverWrapper helps to override close for *connection.
+// driverWrapper helps to override close for *driver.connection.
 type driverWrapper struct {
 	onClose func(*driverWrapper)
 	*driver
 }
 
-// close overrides close method of the connection.
+// close overrides close method of the driver.
 func (dw *driverWrapper) close() {
 	dw.onClose(dw)
 }

@@ -30,19 +30,18 @@ func defaultOptions(
 		Host:     host,
 		Port:     port,
 		Password: password,
+		Channel:  channel,
 
 		PoolMinConnections: 1,
 		PoolMaxConnections: 16,
 		PoolPingThreshold:  time.Minute,
-
-		Channel: channel,
 	}
 }
 
-// OptionSetter defines an option setter.
+// OptionSetter defines an option setter function.
 type OptionSetter func(*controllerOptions)
 
-// OptionPoolMaxConnections sets maximum idle connections in the pool.
+// OptionPoolMaxConnections sets maximum number of idle connections in the pool.
 // By default is 16.
 func OptionPoolMaxIdleConnections(val int) OptionSetter {
 	return func(o *controllerOptions) {
@@ -50,7 +49,7 @@ func OptionPoolMaxIdleConnections(val int) OptionSetter {
 	}
 }
 
-// OptionPoolMinIdleConnections sets minimum idle connections in the pool.
+// OptionPoolMinIdleConnections sets minimum number of idle connections in the pool.
 // By default is 1.
 func OptionPoolMinIdleConnections(val int) OptionSetter {
 	return func(o *controllerOptions) {
@@ -58,8 +57,9 @@ func OptionPoolMinIdleConnections(val int) OptionSetter {
 	}
 }
 
-// OptionPoolPingThreshold sets minumun ping interval to ensure that
-// connection is healthy before getting from the pool.
+// OptionPoolPingThreshold sets a minimum ping interval to ensure that
+// the connection is healthy before getting it from the pool.
+//
 // By default is 1m. For disabling set 0.
 func OptionPoolPingThreshold(val time.Duration) OptionSetter {
 	return func(o *controllerOptions) {

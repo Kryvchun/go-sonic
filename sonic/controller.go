@@ -1,13 +1,13 @@
 package sonic
 
-// controller defines base interface around driversPool.
-type controller struct {
+// driversHolder defines base interface around driversPool.
+type driversHolder struct {
 	*driversPool
 }
 
-func newController(
+func newDriversHolder(
 	opts controllerOptions,
-) (*controller, error) {
+) (*driversHolder, error) {
 	df := driverFactory{
 		Host:     opts.Host,
 		Port:     opts.Port,
@@ -25,20 +25,20 @@ func newController(
 		return nil, err
 	}
 
-	return &controller{
+	return &driversHolder{
 		driversPool: dp,
 	}, nil
 }
 
 // Quit all connections and close the pool. It never returns an error.
-func (c *controller) Quit() error {
+func (c *driversHolder) Quit() error {
 	c.driversPool.Close()
 
 	return nil
 }
 
 // Ping one connection.
-func (c *controller) Ping() error {
+func (c *driversHolder) Ping() error {
 	d, err := c.Get()
 	if err != nil {
 		return err

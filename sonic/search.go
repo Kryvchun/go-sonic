@@ -32,7 +32,7 @@ const (
 )
 
 type searchChannel struct {
-	*controller
+	*driversHolder
 }
 
 // NewSearch create a new driver instance with a searchChannel instance.
@@ -43,7 +43,7 @@ func NewSearch(
 	password string,
 	opts ...OptionSetter,
 ) (Searchable, error) {
-	controller, err := newController(defaultOptions(
+	driversHolder, err := newDriversHolder(defaultOptions(
 		host,
 		port,
 		password,
@@ -54,7 +54,7 @@ func NewSearch(
 	}
 
 	return searchChannel{
-		controller: controller,
+		driversHolder: driversHolder,
 	}, nil
 }
 

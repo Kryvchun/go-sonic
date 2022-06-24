@@ -23,7 +23,7 @@ type Controllable interface {
 
 // controlChannel is used for administration purposes.
 type controlChannel struct {
-	*controller
+	*driversHolder
 }
 
 // NewControl create a new driver instance with a controlChannel instance.
@@ -34,7 +34,7 @@ func NewControl(
 	password string,
 	opts ...OptionSetter,
 ) (Controllable, error) {
-	controller, err := newController(defaultOptions(
+	driversHolder, err := newDriversHolder(defaultOptions(
 		host,
 		port,
 		password,
@@ -45,7 +45,7 @@ func NewControl(
 	}
 
 	return controlChannel{
-		controller: controller,
+		driversHolder: driversHolder,
 	}, nil
 }
 

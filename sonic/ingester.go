@@ -75,7 +75,7 @@ const (
 )
 
 type ingesterChannel struct {
-	*controller
+	*driversHolder
 }
 
 // NewIngester create a new driver instance with a ingesterChannel instance.
@@ -86,7 +86,7 @@ func NewIngester(
 	password string,
 	opts ...OptionSetter,
 ) (Ingestable, error) {
-	controller, err := newController(defaultOptions(
+	driversHolder, err := newDriversHolder(defaultOptions(
 		host,
 		port,
 		password,
@@ -97,7 +97,7 @@ func NewIngester(
 	}
 
 	return ingesterChannel{
-		controller: controller,
+		driversHolder: driversHolder,
 	}, nil
 }
 

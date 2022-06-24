@@ -11,7 +11,7 @@ import (
 	"github.com/expectedsh/go-sonic/sonic"
 )
 
-func TestClosedConn(t *testing.T) {
+func TestPool_Reconnect(t *testing.T) {
 	host, port, pass := getSonicConfig(t)
 
 	closeAllCond := sync.NewCond(&sync.Mutex{})
