@@ -103,7 +103,7 @@ func (c *driver) Ping() error {
 
 // softPing pings the connection if it wasn't pinged for a while.
 func (c *driver) softPing(threshold time.Duration) (ok bool) {
-	if threshold <= 0 || time.Since(c.lastPing) > threshold {
+	if threshold <= 0 || time.Since(c.lastPing) < threshold {
 		return true
 	}
 
