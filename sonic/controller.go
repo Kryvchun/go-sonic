@@ -20,6 +20,7 @@ func newDriversHolder(
 		opts.PoolMinConnections,
 		opts.PoolMaxConnections,
 		opts.PoolPingThreshold,
+		opts.PoolMaxIdleLifetime,
 	)
 	if err != nil {
 		return nil, err

@@ -33,8 +33,10 @@ type driver struct {
 	Port     int
 	Password string
 
+	lastUse  time.Time
 	lastPing time.Time
-	channel  Channel
+
+	channel Channel
 	*connection
 }
 
@@ -67,6 +69,7 @@ func (c *driver) Connect() error {
 
 	c.connection, err = newConnection(c)
 	c.lastPing = time.Now()
+	c.lastUse = time.Now()
 
 	return err
 }
@@ -102,10 +105,16 @@ func (c *driver) Ping() error {
 }
 
 // softPing pings the connection if it wasn't pinged for a while.
-func (c *driver) softPing(threshold time.Duration) (ok bool) {
-	if threshold <= 0 || time.Since(c.lastPing) < threshold {
-		return true
+func (c *driver) checkConn(pingThreshold, maxLifetime time.Duration) (ok bool) {
+	if maxLifetime > 0 && time.Since(c.lastUse) > maxLifetime {
+		return false
 	}
 
-	return c.Ping() == nil
+	c.lastUse = time.Now()
+
+	if pingThreshold > 0 && time.Since(c.lastPing) > pingThreshold {
+		return c.Ping() == nil
+	}
+
+	return true
 }

@@ -3,13 +3,14 @@ package sonic
 import "time"
 
 type controllerOptions struct {
-	Host               string
-	Port               int
-	Password           string
-	PoolMinConnections int
-	PoolMaxConnections int
-	PoolPingThreshold  time.Duration
-	Channel            Channel
+	Host                string
+	Port                int
+	Password            string
+	PoolMinConnections  int
+	PoolMaxConnections  int
+	PoolPingThreshold   time.Duration
+	PoolMaxIdleLifetime time.Duration
+	Channel             Channel
 }
 
 func (o controllerOptions) With(optionSetters ...OptionSetter) controllerOptions {
@@ -32,9 +33,10 @@ func defaultOptions(
 		Password: password,
 		Channel:  channel,
 
-		PoolMinConnections: 1,
-		PoolMaxConnections: 16,
-		PoolPingThreshold:  time.Minute,
+		PoolMinConnections:  1,
+		PoolMaxConnections:  16,
+		PoolMaxIdleLifetime: 5 * time.Minute,
+		PoolPingThreshold:   0,
 	}
 }
 
@@ -60,9 +62,18 @@ func OptionPoolMinIdleConnections(val int) OptionSetter {
 // OptionPoolPingThreshold sets a minimum ping interval to ensure that
 // the connection is healthy before getting it from the pool.
 //
-// By default is 1m. For disabling set 0.
+// By default is 0s. For disabling set it to 0.
 func OptionPoolPingThreshold(val time.Duration) OptionSetter {
 	return func(o *controllerOptions) {
 		o.PoolPingThreshold = val
+	}
+}
+
+// OptionPoolMaxIdleLifetime sets a minimum lifetime of idle connection.
+//
+// By default is 5m. For disabling set it to 0.
+func OptionPoolMaxIdleLifetime(val time.Duration) OptionSetter {
+	return func(o *controllerOptions) {
+		o.PoolMaxIdleLifetime = val
 	}
 }

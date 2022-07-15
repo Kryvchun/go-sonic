@@ -5,10 +5,13 @@ import (
 	"time"
 )
 
+const recursionLimit = 8
+
 type driversPool struct {
-	driverFactory *driverFactory
-	drivers       chan *driverWrapper
-	pingThreshold time.Duration
+	driverFactory   *driverFactory
+	drivers         chan *driverWrapper
+	pingThreshold   time.Duration
+	maxIdleLifetime time.Duration
 
 	isPoolClosedMu sync.RWMutex
 	isPoolClosed   bool
@@ -19,12 +22,14 @@ func newDriversPool(
 	minIdle int,
 	maxIdle int,
 	pingThreshold time.Duration,
+	maxIdleLifetime time.Duration,
 ) (*driversPool, error) {
 	dp := &driversPool{
 		driverFactory: df,
 		drivers:       make(chan *driverWrapper, maxIdle),
 
-		pingThreshold: pingThreshold,
+		pingThreshold:   pingThreshold,
+		maxIdleLifetime: maxIdleLifetime,
 
 		isPoolClosedMu: sync.RWMutex{},
 		isPoolClosed:   false,
@@ -55,7 +60,7 @@ func newDriversPool(
 
 // put the connection back.
 func (p *driversPool) put(dw *driverWrapper) {
-	if dw.closed {
+	if dw.driver.closed {
 		return
 	}
 
@@ -63,7 +68,7 @@ func (p *driversPool) put(dw *driverWrapper) {
 	defer p.isPoolClosedMu.RUnlock()
 
 	if p.isPoolClosed {
-		dw.close()
+		dw.driver.close()
 
 		return
 	}
@@ -72,8 +77,8 @@ func (p *driversPool) put(dw *driverWrapper) {
 	case p.drivers <- dw:
 	default:
 		// The pool is full.
-		_ = dw.Quit()
-		dw.close()
+		_ = dw.driver.Quit()
+		dw.driver.close()
 	}
 }
 
@@ -89,24 +94,36 @@ func (p *driversPool) Get() (*driverWrapper, error) {
 		return nil, ErrClosed
 	}
 
+	return p.getNextDriver(0)
+}
+
+func (p *driversPool) getNextDriver(depth int) (*driverWrapper, error) {
+	if depth > recursionLimit {
+		return p.newDriver()
+	}
+
 	select {
 	case d := <-p.drivers:
-		if !d.softPing(p.pingThreshold) {
-			d.close()
+		if !d.checkConn(p.pingThreshold, p.maxIdleLifetime) {
+			d.driver.close()
 
-			return p.Get()
+			return p.getNextDriver(depth + 1)
 		}
 
 		return d, nil
 	default:
-		d := p.driverFactory.Build()
-
-		if err := d.Connect(); err != nil {
-			return nil, err
-		}
-
-		return p.wrapDriver(d), nil
+		return p.newDriver()
 	}
+}
+
+func (p *driversPool) newDriver() (*driverWrapper, error) {
+	d := p.driverFactory.Build()
+
+	if err := d.Connect(); err != nil {
+		return nil, err
+	}
+
+	return p.wrapDriver(d), nil
 }
 
 // Close and quit all connections in the pool.
@@ -117,10 +134,10 @@ func (p *driversPool) Close() {
 
 	close(p.drivers)
 	for dw := range p.drivers {
-		if !dw.closed {
-			_ = dw.Quit()
+		if !dw.driver.closed {
+			_ = dw.driver.Quit()
 
-			dw.close()
+			dw.driver.close()
 		}
 	}
 }
