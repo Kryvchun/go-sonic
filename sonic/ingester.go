@@ -106,6 +106,7 @@ func (i ingesterChannel) Push(collection, bucket, object, text string, lang Lang
 	if err != nil {
 		return err
 	}
+	defer d.close()
 
 	//
 	patterns := []struct {
@@ -210,6 +211,7 @@ func (i ingesterChannel) Pop(collection, bucket, object, text string) (err error
 	if err != nil {
 		return err
 	}
+	defer d.close()
 
 	err = d.write(fmt.Sprintf("%s %s %s %s \"%s\"", pop, collection, bucket, object, text))
 	if err != nil {
@@ -265,6 +267,7 @@ func (i ingesterChannel) Count(collection, bucket, object string) (cnt int, err 
 	if err != nil {
 		return 0, err
 	}
+	defer d.close()
 
 	err = d.write(fmt.Sprintf("%s %s %s", count, collection, buildCountQuery(bucket, object)))
 	if err != nil {
@@ -295,6 +298,7 @@ func (i ingesterChannel) FlushCollection(collection string) (err error) {
 	if err != nil {
 		return err
 	}
+	defer d.close()
 
 	err = d.write(fmt.Sprintf("%s %s", flushc, collection))
 	if err != nil {
@@ -314,6 +318,7 @@ func (i ingesterChannel) FlushBucket(collection, bucket string) (err error) {
 	if err != nil {
 		return err
 	}
+	defer d.close()
 
 	err = d.write(fmt.Sprintf("%s %s %s", flushb, collection, bucket))
 	if err != nil {
@@ -333,6 +338,7 @@ func (i ingesterChannel) FlushObject(collection, bucket, object string) (err err
 	if err != nil {
 		return err
 	}
+	defer d.close()
 
 	err = d.write(fmt.Sprintf("%s %s %s %s", flusho, collection, bucket, object))
 	if err != nil {

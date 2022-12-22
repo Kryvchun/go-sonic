@@ -44,6 +44,7 @@ func (c *driversHolder) Ping() error {
 	if err != nil {
 		return err
 	}
+	defer d.close()
 
 	return d.Ping()
 }

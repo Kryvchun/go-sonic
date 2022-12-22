@@ -58,6 +58,7 @@ func (c controlChannel) Trigger(action Action) (err error) {
 	if err != nil {
 		return err
 	}
+	defer d.close()
 
 	err = d.write(fmt.Sprintf("TRIGGER %s", action))
 	if err != nil {

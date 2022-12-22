@@ -63,6 +63,7 @@ func (s searchChannel) Query(collection, bucket, term string, limit, offset int,
 	if err != nil {
 		return nil, err
 	}
+	defer d.close()
 
 	err = d.write(fmt.Sprintf("%s %s %s \"%s\" LIMIT(%d) OFFSET(%d)"+langFormat(lang), query, collection, bucket, term, limit, offset, lang))
 	if err != nil {
@@ -88,6 +89,7 @@ func (s searchChannel) Suggest(collection, bucket, word string, limit int) (resu
 	if err != nil {
 		return nil, err
 	}
+	defer d.close()
 
 	err = d.write(fmt.Sprintf("%s %s %s \"%s\" LIMIT(%d)", suggest, collection, bucket, word, limit))
 	if err != nil {
